@@ -1,0 +1,5 @@
+interface:
+  display_name: "Imagegen Config"
+  short_description: "Run original imagegen using local config, without env changes"
+policy:
+  allow_implicit_invocation: true
