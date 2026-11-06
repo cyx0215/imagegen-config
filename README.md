@@ -4,6 +4,84 @@
 
 **一次安装和配置，以后直接说“生成一张……”即可。** 安装时选择 `--set-default`，将这条偏好写入用户级 `AGENTS.md`。只安装技能时，仍可用 `$imagegen-config` 明确调用。
 
+## 效果展示
+
+以下案例使用 `imagegen-config` 调用本地配置的图片 API 制作。图片与 GIF 已压缩，便于在 GitHub 上查看。
+
+### 写实橘猫：生成 → 编辑
+
+| 生成：写实橘猫 | 编辑：戴上小草帽 |
+| --- | --- |
+| ![生成的写实橘猫](examples/orange-tabby.jpg) | ![戴上草帽的橘猫](examples/orange-tabby-hat.jpg) |
+
+原始请求：**“生成一个橘猫的图片，写实风格”**；后续编辑：**“给这个小猫戴上帽子”**。编辑继续使用上一张图片，保留橘猫的样貌、姿势和背景。
+
+<details>
+<summary>橘猫生成：完整提示词</summary>
+
+```text
+Use case: photorealistic-natural
+Asset type: standalone square photograph
+Primary request: A photorealistic photograph of one orange tabby cat.
+Subject: A real domestic orange tabby cat with natural striped ginger fur, lifelike eyes, fine whiskers, and anatomically accurate proportions, resting comfortably and looking toward the camera.
+Scene/backdrop: A simple quiet indoor setting with a softly blurred neutral background.
+Style/medium: Natural professional pet photography, true-to-life fur texture and colors, realistic skin and nose detail, no illustration or CGI appearance.
+Composition/framing: Eye-level portrait, the cat is the clear main subject, balanced square framing with both ears fully visible.
+Lighting/mood: Soft natural window light, gentle shadows, calm warm atmosphere, subtle depth of field.
+Constraints: Exactly one cat. No text, logos, watermark, extra limbs, or artificial-looking fur.
+```
+
+[查看提示词文件](examples/prompts/orange-tabby.txt)
+
+</details>
+
+<details>
+<summary>戴帽子编辑：完整提示词</summary>
+
+```text
+Use case: precise-object-edit
+Asset type: photorealistic edited pet portrait
+Primary request: Put a small hat on the orange tabby cat in the input photograph.
+Input images: Image 1 is the edit target; preserve this exact cat and photograph.
+Edit: Add one small, simple, natural straw hat with a narrow brim, resting comfortably on top of the cat's head between its ears. Fit the hat to the head realistically; keep the face and eyes fully visible.
+Style/medium: Photorealistic, with believable straw texture, matching perspective, soft window light, and subtle contact shadows where the hat meets the fur.
+Constraints: Change only the addition of the hat and its physically necessary local occlusion and contact shadow. Preserve the cat's identity, face, expression, fur markings, eye color, ears, anatomy, pose, paws, body, framing, background, blanket, and original lighting. Keep the original square composition. No other clothing or accessories, no additional objects, no text, logos, or watermark.
+```
+
+[查看提示词文件](examples/prompts/orange-tabby-hat.txt)
+
+</details>
+
+### 参考图动画：鲸鱼娘吃白饭
+
+<p align="center">
+  <img src="examples/whale-girl-rice.gif" alt="鲸鱼娘抱着米饭狂吃、鼓腮、拍肚子、打嗝吐泡泡的循环 GIF" width="480" />
+</p>
+
+保留角色的蓝色长发、鲸鱼耳朵、尾巴和女仆装，白底 Q 版，约 7 秒循环：**狂吃 → 腮帮子鼓起 → 满足地拍肚子 → 打嗝吐出小泡泡 → 回到起始姿势**。
+
+这个案例使用用户提供的角色参考图。先生成吃饭姿势，再将该姿势排成 3 × 4 分格模板，与原参考图一起输入，生成 12 个动作关键帧；最后在本地裁切、补帧并合成 GIF，添加移动的热气和泡泡。它展示的是完整制作流程；Images API 返回的是静态图片素材。
+
+<details>
+<summary>动画关键帧：最终使用的完整提示词</summary>
+
+这里的第一张输入图是 3 × 4 分格模板，第二张输入图是角色参考图。
+
+```text
+EDIT THE ENTIRE FIRST IMAGE. It is a twelve-cell storyboard template, 3 columns and 4 rows. Return the ENTIRE GRID, ALL 12 PANELS TOGETHER in ONE tall sprite-sheet image. Do not return a single character. Do not crop or collapse the grid. Keep 1024x1536 canvas. Second image is the character identity reference.
+Keep the same exact DeepSeek blue-haired whale maid chibi girl in every cell, with matching face, bangs, ears, bows, white maid headband, navy frilly dress, whale-logo apron, long blue gradient hair and whale tail. Same character scale, foot baseline and camera in all panels. White background. Remove cell numbers; retain the regular cell layout. Full body visible inside every cell.
+Change the twelve identical poses into the following sequential animation keyframes (row-major order):
+Row 1: [1 holds steaming big full rice bowl and spoon, eager smile] [2 scoops rice, spoon in bowl] [3 spoon to open mouth, small puffed cheeks].
+Row 2: [4 spoon back toward bowl, both cheeks bigger, rice half full] [5 another large bite, spoon at mouth, cheeks bigger still, rice quarter full] [6 spoon down, enormous puffed cheeks and closed lips, bowl almost empty].
+Row 3: [7 swallow, cheeks normal and eyes closed, empty bowl] [8 holds empty bowl low in left hand, right palm lifts to belly, satisfied smile] [9 right palm pats belly, eyes closed, very happy, empty bowl low].
+Row 4: [10 burps with small O mouth, ONE pale blue bubble at mouth] [11 smile and bubble drifting up right, starts lifting bowl] [12 returns to original full bowl and eager smile like panel 1, bubble gone].
+Pure white background in all panels. Keep the original Q-version illustration style, no new characters, no lettering, no speech balloons. IMPORTANT: OUTPUT MUST SHOW ALL TWELVE DIFFERENT POSES IN A 3x4 SHEET, not one pose.
+```
+
+[查看提示词文件](examples/prompts/whale-girl-animation.txt)
+
+</details>
+
 ## 安装并设为默认
 
 需要 Python 3.10+，以及本机已安装的原版 `imagegen` 技能与附带的 `scripts/image_gen.py`。本项目不分发原版技能源码。

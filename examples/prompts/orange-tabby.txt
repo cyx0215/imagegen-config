@@ -1,0 +1,9 @@
+Use case: photorealistic-natural
+Asset type: standalone square photograph
+Primary request: A photorealistic photograph of one orange tabby cat.
+Subject: A real domestic orange tabby cat with natural striped ginger fur, lifelike eyes, fine whiskers, and anatomically accurate proportions, resting comfortably and looking toward the camera.
+Scene/backdrop: A simple quiet indoor setting with a softly blurred neutral background.
+Style/medium: Natural professional pet photography, true-to-life fur texture and colors, realistic skin and nose detail, no illustration or CGI appearance.
+Composition/framing: Eye-level portrait, the cat is the clear main subject, balanced square framing with both ears fully visible.
+Lighting/mood: Soft natural window light, gentle shadows, calm warm atmosphere, subtle depth of field.
+Constraints: Exactly one cat. No text, logos, watermark, extra limbs, or artificial-looking fur.

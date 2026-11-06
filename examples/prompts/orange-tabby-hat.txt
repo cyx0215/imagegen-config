@@ -1,0 +1,7 @@
+Use case: precise-object-edit
+Asset type: photorealistic edited pet portrait
+Primary request: Put a small hat on the orange tabby cat in the input photograph.
+Input images: Image 1 is the edit target; preserve this exact cat and photograph.
+Edit: Add one small, simple, natural straw hat with a narrow brim, resting comfortably on top of the cat's head between its ears. Fit the hat to the head realistically; keep the face and eyes fully visible.
+Style/medium: Photorealistic, with believable straw texture, matching perspective, soft window light, and subtle contact shadows where the hat meets the fur.
+Constraints: Change only the addition of the hat and its physically necessary local occlusion and contact shadow. Preserve the cat's identity, face, expression, fur markings, eye color, ears, anatomy, pose, paws, body, framing, background, blanket, and original lighting. Keep the original square composition. No other clothing or accessories, no additional objects, no text, logos, or watermark.
