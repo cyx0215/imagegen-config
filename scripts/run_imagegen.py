@@ -14,6 +14,8 @@ from urllib.parse import urlsplit
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_MODEL = "gpt-image-2.6"
 
 
 class ConfigError(ValueError):
@@ -26,11 +28,15 @@ def read_config(path: Path, *, require_key: bool) -> dict[str, str]:
     except (OSError, ValueError) as exc:
         # JSON errors can contain excerpts of a secret-bearing file.
         raise ConfigError("Cannot read config as UTF-8 JSON; check the file locally.") from None
-    if not isinstance(config, dict) or set(config) != {"base_url", "api_key", "model"}:
-        raise ConfigError("Config must contain exactly base_url, api_key, and model.")
+    if not isinstance(config, dict) or "api_key" not in config or set(config) - {"base_url", "api_key", "model"}:
+        raise ConfigError("Config must contain api_key; base_url and model are optional.")
+    config = {"base_url": "", "model": DEFAULT_MODEL, **config}
     for field, value in config.items():
         if not isinstance(value, str) or value != value.strip():
             raise ConfigError(f"Config field {field} must be a string without surrounding whitespace.")
+    # Pass an explicit default so OPENAI_BASE_URL can never override a blank URL.
+    config["base_url"] = config["base_url"] or DEFAULT_BASE_URL
+    config["model"] = config["model"] or DEFAULT_MODEL
     try:
         url = urlsplit(config["base_url"])
         valid_url = (
@@ -43,8 +49,6 @@ def read_config(path: Path, *, require_key: bool) -> dict[str, str]:
         valid_url = False
     if not valid_url:
         raise ConfigError("base_url must be an HTTP(S) API base URL without credentials, query, or fragment.")
-    if not config["model"]:
-        raise ConfigError("model must not be empty.")
     if require_key and not config["api_key"]:
         raise ConfigError("api_key is empty. Fill it in the local config file; do not paste it into chat.")
     return config

@@ -50,11 +50,11 @@ def update_rule(path: Path, *, enabled: bool) -> bool:
 def configure(path: Path) -> None:
     values = json.loads(path.read_text(encoding='utf-8-sig'))
     print('Enter to keep the existing value. API key entry is hidden.')
-    url = input(f"API base URL [{values['base_url']}]: ").strip()
-    model = input(f"Image model [{values['model']}]: ").strip()
+    url = input(f"API base URL [{values.get('base_url') or 'OpenAI default; leave blank'}] (use - to reset): ").strip()
+    model = input(f"Image model [{values.get('model') or 'gpt-image-2.6'}]: ").strip()
     key = getpass.getpass('API key [keep current if blank]: ').strip()
     if url:
-        values['base_url'] = url
+        values['base_url'] = '' if url == '-' else url
     if model:
         values['model'] = model
     if key:

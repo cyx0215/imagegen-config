@@ -15,7 +15,7 @@ python -m pip install -r requirements.txt
 python scripts/install.py --configure --set-default
 ```
 
-按提示输入 API Base URL、模型名和 key。key 隐藏输入，只写入本地 `config.json`。
+按提示输入 API Base URL、模型名和 key。URL 可以直接留空；模型默认 `gpt-image-2.6`。key 隐藏输入，只写入本地 `config.json`。
 
 **安装后新开一个 Codex 会话**，直接说：
 
@@ -53,17 +53,30 @@ python scripts/install.py --unset-default
 
 ```json
 {
+  "base_url": "",
+  "api_key": "填写在本地",
+  "model": "gpt-image-2.6"
+}
+```
+
+也支持完整填写自定义接口与模型；显式值会优先使用，例如：
+
+```json
+{
   "base_url": "https://your-provider.example/v1",
   "api_key": "填写在本地",
   "model": "gpt-image-2"
 }
 ```
 
-- URL 使用供应商实际的 API 前缀，通常包含 `/v1`；不填 `/images/generations` 等完整端点。
+- `base_url` 省略或留空时，显式使用 `https://api.openai.com/v1`，不会读取环境变量里的地址。填写时使用供应商实际的 API 前缀，通常包含 `/v1`；不填 `/images/generations` 等完整端点。
+- `model` 省略或留空时使用 `gpt-image-2.6`；显式填写其他模型（如 `gpt-image-2`）会保留该值。`api_key` 仍需填写。
+- `gpt-image-2.6` 是当前使用的供应商别名，不代表 OpenAI 官方接口一定提供此模型。URL 留空时，需使用官方接口支持的 key 和模型。
 - 供应商需要兼容 OpenAI Images 的生成/编辑参数和 `data[].b64_json` 返回格式。只兼容聊天接口、仅返回图片 URL 或要求轮询任务 ID 的服务，不能直接使用。
 - 模型名必须通过原版 CLI 的 `gpt-image-*` 校验。供应商自己的同族别名可以配置，但其尺寸、透明背景等能力仍取决于供应商与原版 CLI 的校验。
 - 本地曾用供应商别名 `gpt-image-2.6` 验证了单图生成和参考图编辑。这不代表所有供应商或同名模型都兼容。
 - key 保存在本地 JSON 文件中，不加密；仓库忽略 `config.json`，安装器也不会复制源目录里的真实配置。
+- 重新运行交互配置时，URL 输入 `-` 可清空已有自定义地址；直接按回车保留已有值。
 - HTTP 客户端显式使用 config 中的地址和 key；不继承 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、组织/项目或 HTTP 代理设置。需要代理的网络应先适配客户端设置。
 
 ## 手动验证与调用
@@ -91,7 +104,7 @@ python scripts/run_imagegen.py --imagegen-dir /path/to/original/imagegen generat
 ## 测试
 
 ```sh
-python -m unittest discover -s tests -p "test_installer.py"
+python -m unittest discover -s tests -p "test_*.py"
 python tests/test_runtime.py
 ```
 

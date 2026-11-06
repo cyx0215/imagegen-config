@@ -16,8 +16,8 @@ Automatic discovery is enabled. A description alone does not establish priority 
 ## Configuration
 
 - Read configuration only through `scripts/run_imagegen.py`; never display the contents of `config.json` or its API key in chat, shell output, or command arguments.
-- `config.json` beside this file contains `base_url`, `api_key`, and `model`. The key is initially blank; the user fills it locally. Do not ask them to paste a key into chat.
-- The base URL must match the provider's OpenAI-compatible Images API prefix (commonly `/v1`). Model aliases and supported features are provider-specific; verify them with an actual response.
+- `config.json` beside this file contains `api_key` and optional `base_url` and `model`. A blank or omitted URL uses `https://api.openai.com/v1` explicitly, never an inherited environment setting. The default model is `gpt-image-2.6` when omitted or blank. The key is initially blank; the user fills it locally. Do not ask them to paste a key into chat.
+- A nonempty base URL must match the provider's OpenAI-compatible Images API prefix (commonly `/v1`). The default model is the user's selected provider alias, not a claim of official OpenAI availability; users of the official endpoint may need to choose a supported model. Model aliases and supported features are provider-specific; verify them with an actual response.
 - To change the URL or model, edit only the requested fields and preserve the key. Do not place a key in `SKILL.md` or copy a populated config into deliverables.
 - Do not set process, user, or system environment variables, including `OPENAI_*`. Do not read credentials from Codex's global configuration or other projects.
 
