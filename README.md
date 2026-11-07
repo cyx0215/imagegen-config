@@ -93,13 +93,17 @@ python -m pip install -r requirements.txt
 python scripts/install.py --configure --set-default
 ```
 
-按提示输入 API Base URL、模型名和 key。URL 可以直接留空；模型默认 `gpt-image-2.6`。key 隐藏输入，只写入本地 `config.json`。
+按提示只输入 API Base URL 和 key，**不需要填写或选择模型**。URL 可以直接留空；key 隐藏输入，只写入本地 `config.json`。安装器查询接口的模型列表，Codex 再从兼容候选中选择并写入配置，**模型不设固定默认值**。已有可用的模型配置会保留。查询列表不会发起图片请求。
+
+在 Codex 中完成配置时，由 Codex 接着查询、选择和保存模型；如果你直接在终端运行安装器，脚本只保存凭据并输出候选列表，不会自行启动 Codex，模型将在首次使用技能时由 Codex 选定。
 
 **安装后新开一个 Codex 会话**，直接说：
 
 > 生成一张橘猫的图片，写实风格。
 
 > 给这只猫戴一顶小草帽。
+
+以后想换模型，直接说“换个生图模型”，或“以后使用接口列表中的某个模型 ID”；Codex 会重新查询、选择并保存。也可在本地配置中手动修改 `model`，有效的手动选择会保留。
 
 默认安装到 `~/.codex/skills/imagegen-config`；如果已有 `CODEX_HOME`，使用该目录。也可以传 `--codex-home PATH` 指定。安装器不创建或修改环境变量。
 
@@ -133,7 +137,7 @@ python scripts/install.py --unset-default
 {
   "base_url": "",
   "api_key": "填写在本地",
-  "model": "gpt-image-2.6"
+  "model": ""
 }
 ```
 
@@ -148,28 +152,65 @@ python scripts/install.py --unset-default
 ```
 
 - `base_url` 省略或留空时，显式使用 `https://api.openai.com/v1`，不会读取环境变量里的地址。填写时使用供应商实际的 API 前缀，通常包含 `/v1`；不填 `/images/generations` 等完整端点。
-- `model` 省略或留空时使用 `gpt-image-2.6`；显式填写其他模型（如 `gpt-image-2`）会保留该值。`api_key` 仍需填写。
-- `gpt-image-2.6` 是当前使用的供应商别名，不代表 OpenAI 官方接口一定提供此模型。URL 留空时，需使用官方接口支持的 key 和模型。
+- `model` 省略或留空时，由 Codex 在配置完成后或首次使用时查询并选定；用户不用填写。安装器和底层 CLI 不内置固定模型、不按列表第一项自动写入。直接使用 CLI 的高级用户仍可运行 `models list` 和 `models select MODEL_ID`。
+- 供应商提供的模型名或别名不代表 OpenAI 官方接口提供同名模型。URL 留空时，需使用官方接口支持的 key 和模型。
 - 供应商需要兼容 OpenAI Images 的生成/编辑参数和 `data[].b64_json` 返回格式。只兼容聊天接口、仅返回图片 URL 或要求轮询任务 ID 的服务，不能直接使用。
 - 模型名必须通过原版 CLI 的 `gpt-image-*` 校验。供应商自己的同族别名可以配置，但其尺寸、透明背景等能力仍取决于供应商与原版 CLI 的校验。
-- 本地曾用供应商别名 `gpt-image-2.6` 验证了单图生成和参考图编辑。这不代表所有供应商或同名模型都兼容。
+- API 需要支持 `GET /models`；每次真实调用先刷新一次列表，批量任务的模型覆盖也会统一检查。如果列表查询失败或模型已消失，会在生图前停止，让用户修正配置；不会使用过期列表或静默切换模型。
+- 本地历史上曾用供应商别名 `gpt-image-2.6` 验证单图生成和参考图编辑。这不代表其他接口、凭据、同名模型或新配置已验证。
 - key 保存在本地 JSON 文件中，不加密；仓库忽略 `config.json`，安装器也不会复制源目录里的真实配置。
 - 重新运行交互配置时，URL 输入 `-` 可清空已有自定义地址；直接按回车保留已有值。
 - HTTP 客户端显式使用 config 中的地址和 key；不继承 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、组织/项目或 HTTP 代理设置。需要代理的网络应先适配客户端设置。
 
 ## 手动验证与调用
 
-以下示例在安装后的技能目录中执行：
+日常使用直接向 Codex 提出生图、改图或换模型请求即可；下面是可选的 CLI 管理方式，在安装后的技能目录中执行：
 
 ```sh
 python scripts/run_imagegen.py --check-config
+python scripts/run_imagegen.py models list
+# 将下面的 MODEL_ID 换成列表中明确选择的 ID
+python scripts/run_imagegen.py models select MODEL_ID
+python scripts/run_imagegen.py models status
 python scripts/run_imagegen.py generate --prompt "A photorealistic orange tabby cat" --size 1024x1024 --out cat.png --dry-run
 python scripts/run_imagegen.py generate --prompt "A photorealistic orange tabby cat" --size 1024x1024 --out cat.png
 python scripts/run_imagegen.py edit --image cat.png --prompt "Add a small straw hat; preserve the cat and background" --out cat-hat.png
 python scripts/run_imagegen.py generate-batch --input jobs.jsonl --out-dir images
 ```
 
-`--check-config` 只检查本地字段和原版入口，不访问网络、不显示 key；`--dry-run` 只预览请求。首次真实生成才能验证供应商可用性。
+`--check-config` 只检查本地字段和原版入口，不访问网络、不显示 key；若尚未选择模型，会提示继续查询/选择。`--dry-run` 只预览请求。首次正常生成/编辑分别提供对应操作的验证证据，不会额外发起付费探测。
+
+### 模型发现与能力验证
+
+| 命令或状态 | 含义 |
+| --- | --- |
+| `models list` | 仅向当前接口查询模型列表，展示全部 ID，以及原版 CLI 是否接受其名称；不修改配置 |
+| `models select ID` | 再次查询列表，确认 ID 存在且名称被原版 CLI 接受后，只更新配置的 `model` |
+| `models status` | 离线查看当前 URL、key、模型组合的生成/编辑证据及最近一次结果 |
+| `listed` / `cli_accepts_name` | 查得到 / CLI 接受该名称；都不等于能生成或编辑图片 |
+| `verified` | 对应操作曾实际成功返回指定数量的可解码 PNG/JPEG/WebP 图片 |
+| `unverified` | 当前配置没有该操作的成功证据；不等于模型不支持 |
+
+模型选择遵循用户偏好：本次明确指定的模型优先，否则沿用有效的现有配置。首次配置、旧模型消失或用户要求换一个时，Codex 会结合操作需求、既有验证证据和可靠的接口能力信息选择兼容候选，并写入配置。证据不足时会说明这是待验证的起始选择，不把名字或返回顺序当作质量、价格或能力排名。没有兼容候选或明确要求无法满足时，会说明原因并保留配置。
+
+`validation-state.json` 与选中的配置文件放在同一目录，记录 UTC 时间、操作、实际尺寸/质量等参数、结果类别和 HTTP 状态码，不记录原始 key、提示词、输入文件路径或供应商错误正文。可以在 `--config PATH` 外另加 `--state PATH` 指定记录位置（均放在子命令前）。
+
+记录按 URL、key、模型的组合隔离，更换任意一项后不会沿用其他配置的“已验证”。生成成功不代表支持编辑；HTTP 200 或返回 base64 文本也不够，必须能解码为有效图片。记录证明当时参数下的图片数据兼容性，图片内容和视觉质量仍需检查。超时、限流、服务错误、请求拒绝等单独记录，不直接判定模型不支持；失败时保留此前成功时间和最近失败，方便判断。
+
+验证文件与临时锁不进入发布包；状态保存失败会给出提示，不能因此重发图片请求。手动更换 key 可在本地编辑配置中的 `api_key`，也可重新执行 `install.py --configure`，通过隐藏输入保存。
+
+### 主动测试所选模型（真实请求，可能计费）
+
+只有主动要求测试时才运行；不会测试整个模型列表。正常生图/改图也会自动记录证据，通常无需单独测试。
+
+```sh
+# 每次只请求一张图片；输出路径必须尚不存在
+python scripts/run_imagegen.py models test --confirm-billable --out model-test.png
+# 编辑能力需要单独测试，并提供图片输入
+python scripts/run_imagegen.py models test --confirm-billable --operation edit --image model-test.png --out model-edit-test.png
+```
+
+默认测试参数为 `1024x1024`、`low`，可以用 `--size`、`--quality` 显式调整。该参数组合仍需通过原版 CLI 和供应商校验。没有 `--confirm-billable` 时直接停止，不发起网络请求。
 
 原版技能安装在其他位置时：
 
@@ -177,7 +218,7 @@ python scripts/run_imagegen.py generate-batch --input jobs.jsonl --out-dir image
 python scripts/run_imagegen.py --imagegen-dir /path/to/original/imagegen generate --prompt "A cat" --out cat.png
 ```
 
-适配器在独立进程中加载原版脚本，只在内存中绑定客户端工厂、配置检查与默认模型，再调用原版入口。原版文件不写入、不复制。原版内部入口变动可能需要更新适配器；不兼容时会停止。
+适配器在独立进程中加载原版脚本，在内存中绑定客户端工厂、凭据检查、所选模型和模型列表校验，再调用原版入口。API 客户端的轻量包装在返回结果时验证图片数据并记录证据；原版继续负责请求参数、图片生成/编辑、批量调度与输出保存。原版文件不写入、不复制。原版内部入口变动可能需要更新适配器；不兼容时会停止。
 
 ## 测试
 
@@ -186,6 +227,6 @@ python -m unittest discover -s tests -p "test_*.py"
 python tests/test_runtime.py
 ```
 
-安装器测试覆盖重复安装、保留 key、默认路由写入/撤销以及全局 override。运行时测试需要默认位置的原版 `imagegen`，仅访问本机模拟服务，覆盖生成、编辑、异步批量、冲突环境隔离以及原版文件未修改。
+安装器测试覆盖重复安装、保留 key、默认路由写入/撤销以及全局 override。模型与运行时测试需要默认位置的原版 `imagegen`，仅访问本机模拟服务，覆盖模型发现/选择、无默认模型、生成/编辑/批量的独立证据、无效返回、限流/服务错误、凭据隔离、并发状态保存、付费测试开关、冲突环境隔离以及原版文件未修改。
 
 原版技能和 Codex 的背景说明：[技能文档](https://learn.chatgpt.com/docs/build-skills)、[AGENTS.md 文档](https://developers.openai.com/codex/guides/agents-md/)。

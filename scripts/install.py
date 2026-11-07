@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import getpass
-import json
 import os
 from pathlib import Path
 import shutil
@@ -48,35 +46,15 @@ def update_rule(path: Path, *, enabled: bool) -> bool:
 
 
 def configure(path: Path) -> None:
-    values = json.loads(path.read_text(encoding='utf-8-sig'))
-    print('Enter to keep the existing value. API key entry is hidden.')
-    url = input(f"API base URL [{values.get('base_url') or 'OpenAI default; leave blank'}] (use - to reset): ").strip()
-    model = input(f"Image model [{values.get('model') or 'gpt-image-2.6'}]: ").strip()
-    key = getpass.getpass('API key [keep current if blank]: ').strip()
-    if url:
-        values['base_url'] = '' if url == '-' else url
-    if model:
-        values['model'] = model
-    if key:
-        values['api_key'] = key
-    # Validate with the same logic as runtime, without printing credentials.
-    from run_imagegen import read_config
-    import tempfile
-    with tempfile.TemporaryDirectory(dir=path.parent) as temp:
-        candidate = Path(temp) / 'config.json'
-        candidate.write_text(json.dumps(values), encoding='utf-8')
-        if os.name != 'nt':
-            candidate.chmod(0o600)
-        read_config(candidate, require_key=True)
-    path.write_text(json.dumps(values, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    if os.name != 'nt':
-        path.chmod(0o600)
+    # All credential access and API discovery go through the config adapter.
+    from run_imagegen import configure_interactively
+    configure_interactively(path)
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--codex-home', type=Path, default=Path(os.environ.get('CODEX_HOME', Path.home()/'.codex')))
-    parser.add_argument('--configure', action='store_true', help='Prompt for URL, model, and hidden key once')
+    parser.add_argument('--configure', action='store_true', help='Prompt for URL/hidden key only; discover models for Codex to select')
     choices = parser.add_mutually_exclusive_group()
     choices.add_argument('--set-default', action='store_true', help='Add the default image route to global AGENTS')
     choices.add_argument('--unset-default', action='store_true', help='Remove only the managed default route; leave the skill and credentials intact')
@@ -94,7 +72,7 @@ def main(argv=None) -> int:
     target = home / 'skills' / 'imagegen-config'
     target.mkdir(parents=True, exist_ok=True)
     # Explicit allowlist: never copy a credential-bearing config.json from source.
-    for relative in ('SKILL.md', 'agents/openai.yaml', 'config.example.json', 'scripts/run_imagegen.py', 'scripts/install.py'):
+    for relative in ('SKILL.md', 'agents/openai.yaml', 'config.example.json', 'scripts/run_imagegen.py', 'scripts/model_state.py', 'scripts/install.py'):
         source = SOURCE / relative
         destination = target / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +84,7 @@ def main(argv=None) -> int:
         if os.name != 'nt':
             config.chmod(0o600)
     if args.configure:
+        sys.path.insert(0, str(SOURCE / 'scripts'))
         configure(config)
     if args.set_default:
         update_rule(global_file(home), enabled=True)

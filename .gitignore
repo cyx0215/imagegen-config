@@ -1,5 +1,9 @@
 config.json
 **/config.json
+validation-state.json
+validation-state.lock
+.config.json.*.tmp
+.validation-state.json.*.tmp
 __pycache__/
 *.py[cod]
 .venv/

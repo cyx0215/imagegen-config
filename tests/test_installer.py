@@ -23,8 +23,14 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(values['api_key'], '')  # Must never copy the real source key.
             values['api_key'] = 'test-local-only-secret'
             config.write_text(json.dumps(values), encoding='utf-8')
+            state = config.with_name('validation-state.json')
+            state.write_text('{"version": 1, "contexts": {}}', encoding='utf-8')
+            before_config, before_state = config.read_bytes(), state.read_bytes()
             installer.main(['--codex-home', str(home), '--set-default'])
             self.assertEqual(json.loads(config.read_text())['api_key'], 'test-local-only-secret')
+            self.assertEqual(config.read_bytes(), before_config)
+            self.assertEqual(state.read_bytes(), before_state)
+            self.assertTrue((config.parent / 'scripts/model_state.py').exists())
             text = agents.read_text(encoding='utf-8')
             self.assertTrue(text.startswith(original))
             self.assertEqual(text.count(installer.START), 1)

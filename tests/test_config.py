@@ -17,7 +17,7 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             config = Path(temporary)/'config.json'
             config.write_text(json.dumps(values),encoding='utf-8')
-            return adapter.read_config(config,require_key=True)
+            return adapter.read_config(config,require_key=True,require_model=False)
 
     def test_blank_or_missing_url_uses_explicit_official_default(self):
         with patch.dict(os.environ, {'OPENAI_BASE_URL': 'https://wrong.example/v1'}):
@@ -25,14 +25,16 @@ class ConfigTests(unittest.TestCase):
                 with self.subTest(values=values):
                     config=self.load(values)
                     self.assertEqual(config['base_url'],'https://api.openai.com/v1')
-                    self.assertEqual(config['model'],'gpt-image-2.6')
+                    self.assertEqual(config['model'],'')
 
     def test_explicit_custom_values_are_preserved(self):
         values={'base_url':'https://your-provider.example/v1','api_key':'test','model':'gpt-image-2'}
         self.assertEqual(self.load(values),values)
 
-    def test_blank_model_gets_default(self):
-        self.assertEqual(self.load({'api_key':'test','model':''})['model'],'gpt-image-2.6')
+    def test_blank_model_does_not_assume_any_provider_model(self):
+        self.assertEqual(self.load({'api_key':'test','model':''})['model'],'')
+        with self.assertRaises(adapter.ConfigError):
+            adapter.validate_config({'api_key': 'test'}, require_key=True, require_model=True)
 
     def test_invalid_nonempty_url_and_wrong_types_fail(self):
         for value in ['not-a-url','https://example.com/v1?token=abc',None,5]:

@@ -11,18 +11,29 @@ from pathlib import Path
 import tempfile
 import threading
 from unittest.mock import patch
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGINAL = Path.home() / '.codex/skills/.system/imagegen/scripts/image_gen.py'
 spec = importlib.util.spec_from_file_location('config_adapter', ROOT / 'scripts/run_imagegen.py')
 adapter = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(adapter)
-PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aB9sAAAAASUVORK5CYII=')
+png_buffer = io.BytesIO()
+Image.new('RGB', (2, 2), 'blue').save(png_buffer, format='PNG')
+PNG = png_buffer.getvalue()
 requests = []
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
+
+    def do_GET(self):
+        payload = json.dumps({'object': 'list', 'data': [{'id': 'gpt-image-2.6', 'object': 'model'}]}).encode()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers['Content-Length']))
